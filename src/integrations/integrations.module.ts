@@ -5,10 +5,27 @@ import { PosthogController } from './posthog/posthog.controller';
 import { PosthogConnector } from './posthog/posthog.connector';
 import { StripeController } from './stripe/stripe.controller';
 import { StripeConnector } from './stripe/stripe.connector';
+import { CustomerioController } from './customerio/customerio.controller';
+import { CustomerioConnector } from './customerio/customerio.connector';
 
 @Module({
-  controllers: [HubspotController, PosthogController, StripeController],
-  providers: [HubspotConnector, PosthogConnector, StripeConnector],
-  exports: [HubspotConnector, PosthogConnector, StripeConnector],
+  controllers: [
+    HubspotController,
+    PosthogController,
+    StripeController,
+    CustomerioController,
+  ],
+  providers: [
+    HubspotConnector,
+    PosthogConnector,
+    StripeConnector,
+    CustomerioConnector,
+  ],
+  exports: [
+    HubspotConnector,
+    PosthogConnector,
+    StripeConnector,
+    CustomerioConnector,
+  ],
 })
 export class IntegrationsModule {}
