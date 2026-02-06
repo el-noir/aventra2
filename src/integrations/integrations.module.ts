@@ -5,5 +5,6 @@ import { HubspotConnector } from './hubspot/hubspot.connector';
 @Module({
   controllers: [HubspotController],
   providers: [HubspotConnector],
+  exports: [HubspotConnector],
 })
 export class IntegrationsModule {}

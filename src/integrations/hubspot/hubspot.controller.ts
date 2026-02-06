@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, Get } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { HubspotConnector } from './hubspot.connector';
 
 @Controller('integrations/hubspot')
@@ -7,7 +7,29 @@ export class HubspotController {
 
   @Get('test')
   async testConnection() {
-    return this.hubspotConnector.testConnection();
-  }
+    try {
+      const isActive = this.hubspotConnector.isConnectionActive();
 
+      if (!isActive) {
+        await this.hubspotConnector.reconnect();
+      }
+
+      if (this.hubspotConnector.isConnectionActive()) {
+        return {
+          success: true,
+          message: 'HubSpot API connection is active',
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Failed to establish connection to HubSpot',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
 }
