@@ -1,9 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body, Headers, Logger } from '@nestjs/common';
 import { HubspotConnector } from './hubspot.connector';
+import { HubspotService } from './hubspot.service';
 
 @Controller('integrations/hubspot')
 export class HubspotController {
-  constructor(private readonly hubspotConnector: HubspotConnector) {}
+  private readonly logger = new Logger(HubspotController.name);
+
+  constructor(
+    private readonly hubspotConnector: HubspotConnector,
+    private readonly hubspotService: HubspotService,
+  ) {}
 
   @Get('test')
   async testConnection() {
@@ -31,5 +37,26 @@ export class HubspotController {
         error: error.message,
       };
     }
+  }
+
+  @Get('webhook')
+  async verifyWebhook() {
+    return {
+      status: 'ready',
+      message: 'HubSpot webhook endpoint is accessible',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post()
+  async receiveWebhook(@Body() body: any, @Headers() headers: any) {
+    this.logger.log('=== HubSpot Webhook Received ===');
+    this.logger.log('Headers:', JSON.stringify(headers, null, 2));
+    this.logger.log('Body:', JSON.stringify(body, null, 2));
+
+    // Process the event (for now just logging, no normalization)
+    await this.hubspotService.processEvent(body);
+
+    return { status: 'ok' };
   }
 }

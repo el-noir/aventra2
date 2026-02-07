@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HubspotController } from './hubspot/hubspot.controller';
 import { HubspotConnector } from './hubspot/hubspot.connector';
+import { HubspotService } from './hubspot/hubspot.service';
 import { PosthogController } from './posthog/posthog.controller';
 import { PosthogConnector } from './posthog/posthog.connector';
 import { StripeController } from './stripe/stripe.controller';
@@ -17,12 +18,14 @@ import { CustomerioConnector } from './customerio/customerio.connector';
   ],
   providers: [
     HubspotConnector,
+    HubspotService,
     PosthogConnector,
     StripeConnector,
     CustomerioConnector,
   ],
   exports: [
     HubspotConnector,
+    HubspotService,
     PosthogConnector,
     StripeConnector,
     CustomerioConnector,
