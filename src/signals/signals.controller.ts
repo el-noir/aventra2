@@ -33,6 +33,6 @@ export class SignalsController {
 
   @Get('account/:accountId')
   async getByAccount(@Param('accountId') accountId: string) {
-    return this.signalsService.findByAccount(accountId);
+    return this.signalsService.findByAccount(+accountId);
   }
 }

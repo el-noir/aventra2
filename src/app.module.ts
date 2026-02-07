@@ -3,6 +3,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { AccountsModule } from './accounts/accounts.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { SignalsModule } from './signals/signals.module';
 import { MCPModule } from './mcp/mcp.module';
@@ -13,6 +16,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   imports: [
     AuthModule,
     UsersModule,
+    OrganizationsModule,
+    AccountsModule,
+    ContactsModule,
     IntegrationsModule,
     SignalsModule,
     MCPModule,

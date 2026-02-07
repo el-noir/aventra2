@@ -38,10 +38,11 @@ export class MCPService {
     // Save normalized events to database
     for (const event of normalized) {
       await this.signalsService.createSignal({
+        organizationId: event.organizationId,
         source: event.source,
         eventType: event.eventType,
         accountId: event.accountId,
-        userId: event.userId,
+        contactId: event.contactId,
         timestamp: event.timestamp,
         metadata: event.metadata,
       });
@@ -69,10 +70,11 @@ export class MCPService {
       }
 
       return {
+        organizationId: 1, // TODO: Get from webhook context
         source: 'hubspot',
         eventType: mappedType,
-        accountId: event.objectId?.toString(),
-        userId: event.sourceId,
+        accountId: event.objectId ? Number(event.objectId) : undefined,
+        contactId: event.sourceId ? Number(event.sourceId) : undefined,
         timestamp: event.occurredAt
           ? new Date(event.occurredAt)
           : new Date(),
@@ -93,10 +95,11 @@ export class MCPService {
 
     return [
       {
+        organizationId: 1, // TODO: Get from webhook context
         source: 'stripe',
         eventType: mappedType,
         accountId: rawEvent.data?.object?.customer,
-        userId: rawEvent.data?.object?.id,
+        contactId: rawEvent.data?.object?.id,
         timestamp: rawEvent.created
           ? new Date(rawEvent.created * 1000)
           : new Date(),
@@ -119,10 +122,11 @@ export class MCPService {
 
     return [
       {
+        organizationId: 1, // TODO: Get from webhook context
         source: 'customerio',
         eventType: mappedType,
         accountId: rawEvent.customer_id,
-        userId: rawEvent.recipient,
+        contactId: rawEvent.customer_id,
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp * 1000)
           : new Date(),
@@ -145,10 +149,11 @@ export class MCPService {
 
     return [
       {
+        organizationId: 1, // TODO: Get from webhook context
         source: 'posthog',
         eventType: mappedType,
         accountId: rawEvent.properties?.company_id,
-        userId: rawEvent.distinct_id,
+        contactId: rawEvent.distinct_id,
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp)
           : new Date(),

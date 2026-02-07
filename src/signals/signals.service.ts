@@ -18,7 +18,7 @@ export class SignalsService {
     return await this.signalsRepository.save(signal);
   }
 
-  async findByAccount(accountId: string): Promise<Signal[]> {
+  async findByAccount(accountId: number): Promise<Signal[]> {
     return this.signalsRepository.find({
       where: { accountId },
       order: { timestamp: 'DESC' },

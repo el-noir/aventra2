@@ -1,8 +1,9 @@
 export class CreateSignalDto {
+  organizationId: number;
   source: string;
   eventType: string;
-  accountId?: string;
-  userId?: string;
+  contactId?: number;
+  accountId?: number;
   metadata?: any;
   timestamp?: Date;
 }

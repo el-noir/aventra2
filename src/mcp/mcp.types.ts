@@ -1,17 +1,19 @@
 export interface Signal {
   source: string; // hubspot, stripe, customerio, posthog
   type: string; // normalized signal type
-  accountId?: string;
-  userId?: string;
+  organizationId: number;
+  contactId?: number;
+  accountId?: number;
   timestamp: Date;
   metadata?: any; // raw event details
 }
 
 export interface NormalizedEvent {
+  organizationId: number;
   source: string;
   eventType: string;
-  accountId?: string;
-  userId?: string;
+  contactId?: number;
+  accountId?: number;
   timestamp: Date;
   metadata: any;
 }
