@@ -58,6 +58,16 @@ export class MCPService {
     return events.map((event) => {
       const mappedType = this.mapEventType('hubspot', event.subscriptionType);
 
+      // Log unknown events for future mapping
+      if (mappedType === 'unknown') {
+        this.logger.warn(
+          `⚠️ UNKNOWN EVENT TYPE: "${event.subscriptionType}" from HubSpot`,
+        );
+        this.logger.warn(
+          `Event details: ${JSON.stringify({ eventId: event.eventId, objectId: event.objectId, subscriptionType: event.subscriptionType })}`,
+        );
+      }
+
       return {
         source: 'hubspot',
         eventType: mappedType,
@@ -66,13 +76,20 @@ export class MCPService {
         timestamp: event.occurredAt
           ? new Date(event.occurredAt)
           : new Date(),
-        metadata: event,
+        metadata: {
+          ...event,
+          originalEventType: event.subscriptionType, // Keep original for reference
+        },
       };
     });
   }
 
   private normalizeStripe(rawEvent: any): NormalizedEvent[] {
     const mappedType = this.mapEventType('stripe', rawEvent.type);
+
+    if (mappedType === 'unknown') {
+      this.logger.warn(`⚠️ UNKNOWN EVENT TYPE: "${rawEvent.type}" from Stripe`);
+    }
 
     return [
       {
@@ -83,13 +100,22 @@ export class MCPService {
         timestamp: rawEvent.created
           ? new Date(rawEvent.created * 1000)
           : new Date(),
-        metadata: rawEvent,
+        metadata: {
+          ...rawEvent,
+          originalEventType: rawEvent.type,
+        },
       },
     ];
   }
 
   private normalizeCustomerio(rawEvent: any): NormalizedEvent[] {
     const mappedType = this.mapEventType('customerio', rawEvent.metric);
+
+    if (mappedType === 'unknown') {
+      this.logger.warn(
+        `⚠️ UNKNOWN EVENT TYPE: "${rawEvent.metric}" from Customer.io`,
+      );
+    }
 
     return [
       {
@@ -100,13 +126,22 @@ export class MCPService {
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp * 1000)
           : new Date(),
-        metadata: rawEvent,
+        metadata: {
+          ...rawEvent,
+          originalEventType: rawEvent.metric,
+        },
       },
     ];
   }
 
   private normalizePosthog(rawEvent: any): NormalizedEvent[] {
     const mappedType = this.mapEventType('posthog', rawEvent.event);
+
+    if (mappedType === 'unknown') {
+      this.logger.warn(
+        `⚠️ UNKNOWN EVENT TYPE: "${rawEvent.event}" from PostHog`,
+      );
+    }
 
     return [
       {
@@ -117,7 +152,10 @@ export class MCPService {
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp)
           : new Date(),
-        metadata: rawEvent,
+        metadata: {
+          ...rawEvent,
+          originalEventType: rawEvent.event,
+        },
       },
     ];
   }

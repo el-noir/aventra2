@@ -40,8 +40,19 @@ export class SignalsService {
     });
   }
 
+  async findUnknownEvents(limit: number = 50): Promise<Signal[]> {
+    return this.signalsRepository.find({
+      where: { eventType: 'unknown' },
+      order: { timestamp: 'DESC' },
+      take: limit,
+    });
+  }
+
   async getStats() {
     const total = await this.signalsRepository.count();
+    const unknownCount = await this.signalsRepository.count({
+      where: { eventType: 'unknown' },
+    });
 
     const bySource = await this.signalsRepository
       .createQueryBuilder('signal')
@@ -61,6 +72,7 @@ export class SignalsService {
 
     return {
       total,
+      unknownCount,
       bySource,
       topEventTypes: byEventType,
     };

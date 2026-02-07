@@ -16,6 +16,12 @@ export class SignalsController {
     return this.signalsService.getStats();
   }
 
+  @Get('unknown')
+  async getUnknownEvents(@Query('limit') limit?: string) {
+    const limitNumber = limit ? parseInt(limit, 10) : 50;
+    return this.signalsService.findUnknownEvents(limitNumber);
+  }
+
   @Get('source/:source')
   async getBySource(
     @Param('source') source: string,
