@@ -8,8 +8,10 @@ import { StripeController } from './stripe/stripe.controller';
 import { StripeConnector } from './stripe/stripe.connector';
 import { CustomerioController } from './customerio/customerio.controller';
 import { CustomerioConnector } from './customerio/customerio.connector';
+import { SignalsModule } from '../signals/signals.module';
 
 @Module({
+  imports: [SignalsModule],
   controllers: [
     HubspotController,
     PosthogController,

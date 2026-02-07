@@ -1,28 +1,50 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { SignalsService } from '../../signals/signals.service';
 
 @Injectable()
 export class HubspotService {
   private readonly logger = new Logger(HubspotService.name);
 
+  constructor(private readonly signalsService: SignalsService) {}
+
   async processEvent(rawEvent: any) {
     this.logger.log('Processing HubSpot event...');
+    this.logger.log('Raw event:', JSON.stringify(rawEvent, null, 2));
 
-    // For now, just log the raw event
-    // Later: normalize, store in DB, trigger workflows, etc.
-    
+    // Just save raw events - MCP will handle normalization
     if (Array.isArray(rawEvent)) {
-      this.logger.log(`Received ${rawEvent.length} events`);
-      rawEvent.forEach((event, index) => {
-        this.logger.log(`Event ${index + 1}:`, JSON.stringify(event, null, 2));
-      });
+      for (const event of rawEvent) {
+        await this.signalsService.createSignal({
+          source: 'hubspot',
+          eventType: event.subscriptionType || 'unknown',
+          accountId: event.objectId?.toString(),
+          userId: event.sourceId,
+          metadata: event,
+          timestamp: event.occurredAt ? new Date(event.occurredAt) : new Date(),
+        });
+      }
     } else {
-      this.logger.log('Event data:', JSON.stringify(rawEvent, null, 2));
+      await this.signalsService.createSignal({
+        source: 'hubspot',
+        eventType: rawEvent.subscriptionType || 'unknown',
+        accountId: rawEvent.objectId?.toString(),
+        userId: rawEvent.sourceId,
+        metadata: rawEvent,
+        timestamp: rawEvent.occurredAt
+          ? new Date(rawEvent.occurredAt)
+          : new Date(),
+      });
     }
+
+    this.logger.log('Event(s) saved to database');
+  }
+}
+
 
     // TODO: Add normalization logic here later
     // const signals = this.normalizeEvent(rawEvent);
     // await this.saveSignals(signals);
-  }
+  
 
   // Placeholder for future normalization
   // private normalizeEvent(rawEvent: any) {
@@ -49,4 +71,4 @@ export class HubspotService {
   // private async saveSignals(signals: any[]) {
   //   // Store in database
   // }
-}
+
