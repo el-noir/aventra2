@@ -12,8 +12,6 @@ export interface NormalizedEvent {
   organizationId: number;
   source: string;
   eventType: string;
-  contactId?: number;
-  accountId?: number;
   timestamp: Date;
-  metadata: any;
+  metadata: any; // Contains raw external IDs for identity resolution
 }

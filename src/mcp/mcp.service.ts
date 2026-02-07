@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SignalsService } from '../signals/signals.service';
+import { IdentityResolutionService } from '../identity/identity-resolution.service';
 import { NormalizedEvent } from './mcp.types';
 import * as mappings from './mcp.mapping.json';
 
@@ -8,7 +9,10 @@ export class MCPService {
   private readonly logger = new Logger(MCPService.name);
   private readonly eventMappings: any;
 
-  constructor(private readonly signalsService: SignalsService) {
+  constructor(
+    private readonly signalsService: SignalsService,
+    private readonly identityResolutionService: IdentityResolutionService,
+  ) {
     this.eventMappings = mappings;
   }
 
@@ -35,17 +39,26 @@ export class MCPService {
         return;
     }
 
-    // Save normalized events to database
+    // Save normalized events to database with identity resolution
     for (const event of normalized) {
+      // Resolve external IDs → internal Account/Contact
+      const identity = await this.identityResolutionService.resolveIdentity(
+        event,
+      );
+
       await this.signalsService.createSignal({
         organizationId: event.organizationId,
         source: event.source,
         eventType: event.eventType,
-        accountId: event.accountId,
-        contactId: event.contactId,
+        accountId: identity.accountId,
+        contactId: identity.contactId,
         timestamp: event.timestamp,
         metadata: event.metadata,
       });
+
+      this.logger.debug(
+        `Stored signal: ${event.eventType} (contact: ${identity.contactId}, account: ${identity.accountId})`,
+      );
     }
 
     this.logger.log(
@@ -73,8 +86,6 @@ export class MCPService {
         organizationId: 1, // TODO: Get from webhook context
         source: 'hubspot',
         eventType: mappedType,
-        accountId: event.objectId ? Number(event.objectId) : undefined,
-        contactId: event.sourceId ? Number(event.sourceId) : undefined,
         timestamp: event.occurredAt
           ? new Date(event.occurredAt)
           : new Date(),
@@ -98,8 +109,6 @@ export class MCPService {
         organizationId: 1, // TODO: Get from webhook context
         source: 'stripe',
         eventType: mappedType,
-        accountId: rawEvent.data?.object?.customer,
-        contactId: rawEvent.data?.object?.id,
         timestamp: rawEvent.created
           ? new Date(rawEvent.created * 1000)
           : new Date(),
@@ -125,8 +134,6 @@ export class MCPService {
         organizationId: 1, // TODO: Get from webhook context
         source: 'customerio',
         eventType: mappedType,
-        accountId: rawEvent.customer_id,
-        contactId: rawEvent.customer_id,
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp * 1000)
           : new Date(),
@@ -152,8 +159,6 @@ export class MCPService {
         organizationId: 1, // TODO: Get from webhook context
         source: 'posthog',
         eventType: mappedType,
-        accountId: rawEvent.properties?.company_id,
-        contactId: rawEvent.distinct_id,
         timestamp: rawEvent.timestamp
           ? new Date(rawEvent.timestamp)
           : new Date(),
