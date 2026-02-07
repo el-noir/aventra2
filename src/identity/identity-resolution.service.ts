@@ -80,7 +80,10 @@ export class IdentityResolutionService {
     // Extract contact identifiers based on source
     switch (source) {
       case 'hubspot':
-        externalId = metadata.sourceId || metadata.objectId;
+        // For company events, sourceId is the user who triggered the change
+        // For contact events, objectId is the contact
+        const isCompanyEvent = metadata.subscriptionType?.startsWith('company.');
+        externalId = isCompanyEvent ? metadata.sourceId : (metadata.sourceId || metadata.objectId);
         email = metadata.properties?.email;
         name = metadata.properties?.firstname
           ? `${metadata.properties.firstname} ${metadata.properties.lastname || ''}`.trim()
@@ -138,9 +141,18 @@ export class IdentityResolutionService {
     // Extract company identifiers based on source
     switch (source) {
       case 'hubspot':
-        // HubSpot might have company in event metadata
-        companyExternalId = metadata.companyId || metadata.associatedCompanyId;
-        companyName = metadata.companyName;
+        // For company.* events, objectId IS the company ID
+        const isCompanyEvent = metadata.subscriptionType?.startsWith('company.');
+        if (isCompanyEvent) {
+          companyExternalId = String(metadata.objectId);
+          companyName = metadata.propertyValue && metadata.propertyName === 'name' 
+            ? metadata.propertyValue 
+            : metadata.properties?.name;
+        } else {
+          // For contact/deal events, look for associated company
+          companyExternalId = metadata.companyId || metadata.associatedCompanyId;
+          companyName = metadata.companyName;
+        }
         break;
 
       case 'stripe':
