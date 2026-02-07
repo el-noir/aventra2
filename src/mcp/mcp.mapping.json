@@ -1,0 +1,37 @@
+{
+  "hubspot": {
+    "contact.creation": "user_created",
+    "contact.propertyChange": "user_updated",
+    "contact.deletion": "user_deleted",
+    "deal.creation": "deal_created",
+    "deal.propertyChange": "pipeline_change",
+    "deal.deletion": "deal_deleted",
+    "company.creation": "account_created",
+    "company.propertyChange": "account_updated",
+    "company.deletion": "account_deleted",
+    "engagement.creation": "activity_engagement"
+  },
+  "stripe": {
+    "customer.created": "user_created",
+    "customer.updated": "user_updated",
+    "customer.deleted": "user_deleted",
+    "invoice.paid": "payment_success",
+    "invoice.payment_failed": "payment_failed",
+    "subscription.created": "subscription_started",
+    "subscription.updated": "subscription_changed",
+    "subscription.deleted": "subscription_cancelled"
+  },
+  "customerio": {
+    "email_opened": "marketing_engagement",
+    "email_clicked": "marketing_engagement_click",
+    "email_bounced": "marketing_bounce",
+    "email_delivered": "marketing_delivered",
+    "email_sent": "marketing_sent"
+  },
+  "posthog": {
+    "identify": "user_identified",
+    "capture": "event_tracked",
+    "page": "page_view",
+    "screen": "screen_view"
+  }
+}

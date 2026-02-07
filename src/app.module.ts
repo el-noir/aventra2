@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { SignalsModule } from './signals/signals.module';
+import { MCPModule } from './mcp/mcp.module';
 import { TypeOrmModule } from '@nestjs/typeorm/dist/typeorm.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -14,6 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     UsersModule,
     IntegrationsModule,
     SignalsModule,
+    MCPModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
