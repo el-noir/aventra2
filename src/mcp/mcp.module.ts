@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { MCPService } from './mcp.service';
 import { SignalsModule } from '../signals/signals.module';
 import { IdentityModule } from '../identity/identity.module';
+import { LifecycleModule } from '../lifecycle/lifecycle.module';
 
 @Module({
-  imports: [SignalsModule, IdentityModule],
+  imports: [SignalsModule, IdentityModule, LifecycleModule],
   providers: [MCPService],
   exports: [MCPService],
 })

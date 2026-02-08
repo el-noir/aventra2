@@ -9,6 +9,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { SignalsModule } from './signals/signals.module';
 import { MCPModule } from './mcp/mcp.module';
+import { LifecycleModule } from './lifecycle/lifecycle.module';
 import { TypeOrmModule } from '@nestjs/typeorm/dist/typeorm.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -22,6 +23,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     IntegrationsModule,
     SignalsModule,
     MCPModule,
+    LifecycleModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

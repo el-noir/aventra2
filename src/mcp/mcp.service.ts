@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SignalsService } from '../signals/signals.service';
 import { IdentityResolutionService } from '../identity/identity-resolution.service';
+import { LifecycleService } from '../lifecycle/lifecycle.service';
 import { NormalizedEvent } from './mcp.types';
 import * as mappings from './mcp.mapping.json';
 
@@ -12,6 +13,7 @@ export class MCPService {
   constructor(
     private readonly signalsService: SignalsService,
     private readonly identityResolutionService: IdentityResolutionService,
+    private readonly lifecycleService: LifecycleService,
   ) {
     this.eventMappings = mappings;
   }
@@ -59,6 +61,11 @@ export class MCPService {
       this.logger.debug(
         `Stored signal: ${event.eventType} (contact: ${identity.contactId}, account: ${identity.accountId})`,
       );
+
+      // Evaluate lifecycle after signal is stored
+      if (identity.accountId) {
+        await this.lifecycleService.evaluateAccount(identity.accountId);
+      }
     }
 
     this.logger.log(
