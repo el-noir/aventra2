@@ -91,9 +91,20 @@ export class IdentityResolutionService {
         break;
 
       case 'stripe':
-        externalId = metadata.data?.object?.id;
-        email = metadata.data?.object?.email;
-        name = metadata.data?.object?.name;
+        // For customer objects, use customer ID directly
+        // For other objects (invoice, subscription), use the customer field
+        const stripeObj = metadata.data?.object;
+        if (stripeObj?.object === 'customer') {
+          externalId = stripeObj.id;
+          email = stripeObj.email;
+          name = stripeObj.name;
+        } else {
+          // invoice, subscription, charge, etc. — reference the customer
+          externalId = stripeObj?.customer || stripeObj?.id;
+          // Real Stripe invoices use customer_email/customer_name
+          email = stripeObj?.customer_email || stripeObj?.email;
+          name = stripeObj?.customer_name || stripeObj?.name;
+        }
         break;
 
       case 'customerio':
@@ -165,7 +176,27 @@ export class IdentityResolutionService {
         break;
     }
 
-    // Strategy 1: Direct company ID mapping
+    // Strategy 1: If the contact already has an account, prefer it
+    // and merge the new source's company ID into that account
+    if (contactId) {
+      const contact = await this.contactsService.findById(contactId);
+      if (contact?.accountId) {
+        // If we also have a company external ID from this source, merge it
+        if (companyExternalId) {
+          await this.accountsService.addExternalId(
+            contact.accountId,
+            source,
+            companyExternalId,
+          );
+          this.logger.debug(
+            `Merged ${source} company ID (${companyExternalId}) into existing account ${contact.accountId}`,
+          );
+        }
+        return contact.accountId;
+      }
+    }
+
+    // Strategy 2: Direct company ID mapping (no existing account on contact)
     if (companyExternalId) {
       const account = await this.accountsService.findOrCreateByExternalId(
         organizationId,
@@ -176,21 +207,68 @@ export class IdentityResolutionService {
       return account.id;
     }
 
-    // Strategy 2: Resolve via Contact->Account relationship
-    if (contactId) {
-      const contact = await this.contactsService.findById(contactId);
-      if (contact?.accountId) {
-        return contact.accountId;
+    // Strategy 3: Email domain → Account
+    // Extract domain from contact email and find/create account by domain
+    const email = this.extractEmail(source, metadata);
+    if (email) {
+      const domain = this.extractDomain(email);
+      if (domain) {
+        const account = await this.accountsService.findOrCreateByDomain(
+          organizationId,
+          domain,
+        );
+        if (account) {
+          this.logger.debug(
+            `Resolved account ${account.id} from email domain "${domain}"`,
+          );
+          return account.id;
+        }
       }
     }
-
-    // Strategy 3: Email domain → Account (future enhancement)
-    // Could extract domain from email and find/create account
 
     this.logger.debug(
       `No account resolved for ${source} event (contact: ${contactId})`,
     );
     return undefined;
+  }
+
+  /**
+   * Extract email from event metadata based on source
+   */
+  private extractEmail(source: string, metadata: any): string | undefined {
+    switch (source) {
+      case 'hubspot':
+        return metadata.properties?.email;
+      case 'stripe':
+        const obj = metadata.data?.object;
+        return obj?.email || obj?.customer_email;
+      case 'customerio':
+        return metadata.email_address;
+      case 'posthog':
+        return metadata.properties?.$email;
+      default:
+        return undefined;
+    }
+  }
+
+  /**
+   * Extract company domain from email, ignoring free email providers
+   */
+  private extractDomain(email: string): string | undefined {
+    const FREE_PROVIDERS = new Set([
+      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+      'aol.com', 'icloud.com', 'mail.com', 'protonmail.com',
+      'proton.me', 'zoho.com', 'yandex.com', 'live.com',
+      'msn.com', 'me.com', 'gmx.com', 'fastmail.com',
+    ]);
+
+    const parts = email.split('@');
+    if (parts.length !== 2) return undefined;
+
+    const domain = parts[1].toLowerCase();
+    if (FREE_PROVIDERS.has(domain)) return undefined;
+
+    return domain;
   }
 
   /**

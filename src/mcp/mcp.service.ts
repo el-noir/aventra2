@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SignalsService } from '../signals/signals.service';
 import { IdentityResolutionService } from '../identity/identity-resolution.service';
 import { LifecycleService } from '../lifecycle/lifecycle.service';
+import { ContactsService } from '../contacts/contacts.service';
 import { NormalizedEvent } from './mcp.types';
 import * as mappings from './mcp.mapping.json';
 
@@ -14,6 +15,7 @@ export class MCPService {
     private readonly signalsService: SignalsService,
     private readonly identityResolutionService: IdentityResolutionService,
     private readonly lifecycleService: LifecycleService,
+    private readonly contactsService: ContactsService,
   ) {
     this.eventMappings = mappings;
   }
@@ -61,6 +63,17 @@ export class MCPService {
       this.logger.debug(
         `Stored signal: ${event.eventType} (contact: ${identity.contactId}, account: ${identity.accountId})`,
       );
+
+      // Link contact → account if both resolved and contact has no account yet
+      if (identity.contactId && identity.accountId) {
+        const contact = await this.contactsService.findById(identity.contactId);
+        if (contact && !contact.accountId) {
+          await this.contactsService.linkToAccount(identity.contactId, identity.accountId);
+          this.logger.debug(
+            `Linked contact ${identity.contactId} → account ${identity.accountId}`,
+          );
+        }
+      }
 
       // Evaluate lifecycle after signal is stored
       if (identity.accountId) {

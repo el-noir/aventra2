@@ -56,6 +56,15 @@ export class ContactsService {
     ) || null;
   }
 
+  async findByEmail(
+    organizationId: number,
+    email: string,
+  ): Promise<Contact | null> {
+    return this.contactsRepository.findOne({
+      where: { organizationId, email },
+    });
+  }
+
   async findOrCreateByExternalId(
     organizationId: number,
     source: string,
@@ -63,12 +72,36 @@ export class ContactsService {
     email?: string,
     name?: string,
   ): Promise<Contact> {
+    // Strategy 1: Find by source-specific external ID
     let contact = await this.findByExternalId(
       organizationId,
       source,
       externalId,
     );
 
+    // Strategy 2: Find by email (cross-source dedup)
+    if (!contact && email) {
+      contact = await this.findByEmail(organizationId, email);
+      if (contact) {
+        // Merge: add this source's external ID to the existing contact
+        const updatedExternalIds = {
+          ...contact.externalIds,
+          [`${source}_contact_id`]: externalId,
+        };
+        await this.contactsRepository.update(contact.id, {
+          externalIds: updatedExternalIds,
+          // Update name if we have one and the contact doesn't
+          ...(name && !contact.name ? { name } : {}),
+        });
+        contact.externalIds = updatedExternalIds;
+        if (name && !contact.name) contact.name = name;
+        this.logger.log(
+          `Merged ${source} ID (${externalId}) into existing contact ${contact.id} via email ${email}`,
+        );
+      }
+    }
+
+    // Strategy 3: Create new contact
     if (!contact) {
       contact = await this.create({
         organizationId,
@@ -106,5 +139,13 @@ export class ContactsService {
       lifecycleStage: stage,
     });
     return this.findById(contactId);
+  }
+
+  async linkToAccount(
+    contactId: number,
+    accountId: number,
+  ): Promise<void> {
+    await this.contactsRepository.update(contactId, { accountId });
+    this.logger.log(`Linked contact ${contactId} → account ${accountId}`);
   }
 }

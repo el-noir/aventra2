@@ -52,18 +52,79 @@ export class AccountsService {
     ) || null;
   }
 
+  async findByName(
+    organizationId: number,
+    name: string,
+  ): Promise<Account | null> {
+    return this.accountsRepository.findOne({
+      where: { organizationId, name },
+    });
+  }
+
+  async findByDomain(
+    organizationId: number,
+    domain: string,
+  ): Promise<Account | null> {
+    return this.accountsRepository.findOne({
+      where: { organizationId, domain },
+    });
+  }
+
+  async findOrCreateByDomain(
+    organizationId: number,
+    domain: string,
+  ): Promise<Account> {
+    let account = await this.findByDomain(organizationId, domain);
+
+    if (!account) {
+      // Derive a readable name from domain (acmecorp.com → Acmecorp)
+      const name = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+      account = await this.create({
+        organizationId,
+        name,
+        domain,
+      });
+      this.logger.log(
+        `Created new account from email domain: ${account.id} (${domain})`,
+      );
+    }
+
+    return account;
+  }
+
   async findOrCreateByExternalId(
     organizationId: number,
     source: string,
     externalId: string,
     name?: string,
   ): Promise<Account> {
+    // Strategy 1: Find by source-specific external ID
     let account = await this.findByExternalId(
       organizationId,
       source,
       externalId,
     );
 
+    // Strategy 2: Find by name (cross-source dedup)
+    if (!account && name) {
+      account = await this.findByName(organizationId, name);
+      if (account) {
+        // Merge: add this source's external ID to the existing account
+        const updatedExternalIds = {
+          ...account.externalIds,
+          [`${source}_company_id`]: externalId,
+        };
+        await this.accountsRepository.update(account.id, {
+          externalIds: updatedExternalIds,
+        });
+        account.externalIds = updatedExternalIds;
+        this.logger.log(
+          `Merged ${source} ID (${externalId}) into existing account ${account.id} via name "${name}"`,
+        );
+      }
+    }
+
+    // Strategy 3: Create new account
     if (!account) {
       account = await this.create({
         organizationId,
@@ -94,6 +155,29 @@ export class AccountsService {
     return this.accountsRepository.find({
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async addExternalId(
+    accountId: number,
+    source: string,
+    externalId: string,
+  ): Promise<void> {
+    const account = await this.findById(accountId);
+    if (!account) return;
+
+    const key = `${source}_company_id`;
+    if (account.externalIds?.[key] === externalId) return; // already present
+
+    const updatedExternalIds = {
+      ...account.externalIds,
+      [key]: externalId,
+    };
+    await this.accountsRepository.update(accountId, {
+      externalIds: updatedExternalIds,
+    });
+    this.logger.log(
+      `Added ${source} ID (${externalId}) to account ${accountId}`,
+    );
   }
 
   async findByStage(stage: LifecycleStage): Promise<Account[]> {
